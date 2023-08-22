@@ -121,7 +121,7 @@ def log_error(error_message, order_info):
     log_order_error_message(error_message, order_info)
     log_alert_message(order_info, "실패")
 
-
+#trigger7kr
 @app.post("/order")
 @app.post("/")
 async def order(order_info: MarketOrder, background_tasks: BackgroundTasks):
