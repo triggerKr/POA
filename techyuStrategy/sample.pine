@@ -1,0 +1,30 @@
+//@version=5
+//@strategy_alert_message {{strategy.order.alert_message}}
+// ************************************** POA ************************************** //
+import dokang/POA/12 as POA
+
+// 시작시간, 종료시간 설정
+start_time = input.time(timestamp("2023-09-06T20:55:00+09:00"), title="자동매매 시작")
+end_time = input.time(timestamp("2024-09-06T20:51:00+09:00"), title="자동매매 종료")
+
+// 포아봇 설정
+pstrategy = POA.bot.new("1q2w3e4r%t", start_time, end_time, leverage = 1)
+pstrategy.start_trade()
+// ********************************************************************************* //
+
+// 전략스크립트
+strategy("테스트1",
+ overlay = true,
+ process_orders_on_close = true,
+ initial_capital = 76)
+
+// 전략 알고리즘 작성
+is_long = true
+is_long_close = true
+is_short = true
+is_short_close = true
+
+if is_long
+    pstrategy.entry("롱", "strategy.long")
+if is_long_close
+    pstrategy.close("롱", comment = "롱 종료")
