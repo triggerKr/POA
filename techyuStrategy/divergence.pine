@@ -7,6 +7,7 @@ plot( rsi, linewidth = 2)
 
 //2. 피봇 찾기 ( 상승 div- 피봇 로우, 하락div )
 pivotlow = ta.pivotlow(rsi, 5, 5)
+pivothigh = ta.pivothigh(rsi, 5, 5) 
 //plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5)
 
 //3. 다이버전스 찾기
@@ -21,15 +22,27 @@ price_lower_low = pivotlow ? low[5] < prev_low : false
 bgcolor( price_lower_low ? color.rgb(255,153,0,90) : na, offset = -5)
 
 is_regular_bullish_divergence = osc_higher_low and price_lower_low
-bgcolor( is_regular_bullish_divergence ?  color.green: na, offset = -5)
+//bgcolor( is_regular_bullish_divergence ?  color.green: na, offset = -5)
 
 plotshape( is_regular_bullish_divergence ? pivotlow : na , offset = -5 , title="상승 다이버전스", text = 'Bull', style= shape.labelup, color = color.green,textcolor = color.white, location = location.absolute ) 
 plot( pivotlow ? pivotlow : na, color = is_regular_bullish_divergence ? color.green : na , offset = -5 , linewidth= 2)
 
+
+// regular 하락다이버전스 ==> 지표 피봇고점은 하락, 가격 고점은 상승
+prev_pivothigh = ta.valuewhen(pivothigh , pivothigh, 1)
+osc_lower_high = pivothigh ? pivothigh < prev_pivothigh : false
+prev_high = ta.valuewhen( pivothigh, high[5], 1 )
+price_higher_high = pivothigh ? high[5] > prev_high : false
+
+is_regular_bearish_divergence = osc_lower_high and price_higher_high
+//bgcolor( is_regular_bearish_divergence ? color.red : na , offset = -5 )
+plotshape( is_regular_bearish_divergence ? pivothigh : na , offset = -5 , title="하락 다이버전스", text = 'Bear', style= shape.labelup, color = color.red,textcolor = color.white, location = location.absolute ) 
+plot( pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.red : na , offset = -5 , linewidth= 2)
+
 //4. 전략 진입 | 종료
 is_long = is_regular_bullish_divergence
 
-is_long_close = ta.crossover(rsi, 70)
+is_long_close = is_regular_bearish_divergence //ta.crossover(rsi, 70)
 
 if( is_long)
     strategy.entry( "롱", strategy.long)
