@@ -12,10 +12,6 @@ fill( h1,h2, color=color.new(color.purple, 90))
 rsi = ta.rsi( close, 14)
 plot( rsi, linewidth = 2)
 
-
-//isCrossOVer = ta.crossover(rsi, 70)
-//isCrossUnder = ta.crossunder(rsi,30)
-
 //2. 피봇 찾기 ( 상승 div- 피봇 로우, 하락div )
 pivotlow = ta.pivotlow(rsi, 5, 5)
 pivothigh = ta.pivothigh(rsi, 5, 5) 
@@ -58,7 +54,7 @@ plot( pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.
 
 //4. 전략 진입 | 종료
 is_long = is_regular_bullish_divergence   
-is_long_close = is_regular_bearish_divergence or ta.crossover(rsi, 70)
+is_long_close = is_regular_bearish_divergence or ta.crossover(rsi, 50)
 
 if( is_long)
     strategy.entry( "롱", strategy.long)
@@ -66,7 +62,7 @@ if( is_long_close )
     strategy.close( "롱")
 
 is_short = is_regular_bearish_divergence   
-is_shrt_close = is_regular_bullish_divergence or ta.crossunder(rsi, 30)
+is_shrt_close = is_regular_bullish_divergence  or ta.crossunder(rsi, 50)
 
 if( is_short)
     strategy.entry( "숏", strategy.short)
