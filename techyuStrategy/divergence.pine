@@ -1,0 +1,37 @@
+//@version=5
+strategy("다이버전스 전략", overlay=false)
+
+//1. 지표
+rsi = ta.rsi( close, 14)
+plot( rsi, linewidth = 2)
+
+//2. 피봇 찾기 ( 상승 div- 피봇 로우, 하락div )
+pivotlow = ta.pivotlow(rsi, 5, 5)
+//plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5)
+
+//3. 다이버전스 찾기
+// regular 상승다이버전스 ==> 지표 피봇저점은 상승, 가격 저점은 하락
+prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1)
+osc_higher_low = pivotlow ? pivotlow > prev_pivotlow: false
+bgcolor( osc_higher_low ? color.rgb(76, 175, 79, 90) : na, offset = -5 )
+
+prev_low = ta.valuewhen(pivotlow, low[5], 1)
+//price_lower_low = pivotlow ? 가격의 저점은 하락 : false
+price_lower_low = pivotlow ? low[5] < prev_low : false
+bgcolor( price_lower_low ? color.rgb(255,153,0,90) : na, offset = -5)
+
+is_regular_bullish_divergence = osc_higher_low and price_lower_low
+bgcolor( is_regular_bullish_divergence ?  color.green: na, offset = -5)
+
+plotshape( is_regular_bullish_divergence ? pivotlow : na , offset = -5 , title="상승 다이버전스", text = 'Bull', style= shape.labelup, color = color.green,textcolor = color.white, location = location.absolute ) 
+plot( pivotlow ? pivotlow : na, color = is_regular_bullish_divergence ? color.green : na , offset = -5 , linewidth= 2)
+
+//4. 전략 진입 | 종료
+is_long = is_regular_bullish_divergence
+
+is_long_close = ta.crossover(rsi, 70)
+
+if( is_long)
+    strategy.entry( "롱", strategy.long)
+if( is_long_close )
+    strategy.close( "롱")
