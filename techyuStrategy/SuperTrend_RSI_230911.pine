@@ -1,0 +1,69 @@
+
+//@version=5
+
+//@strategy_alert_message {{strategy.order.alert_message}}
+import dokang/POA/6 as POA
+password = "*****"
+
+strategy("SuperTrend", overlay = true, process_orders_on_close = true, initial_capital = 12000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100)
+long_trail_percent = input.float(1.0, "롱 트레일")/100
+long_stop_price = 0.0
+limit_long_value = 1.0 
+profit_long_value = 1.0
+limit_short_value = 0.0
+profit_short_value = 1.0
+short_trail_percent = input.float(1.1, "숏 트레일")/100
+short_stop_price = 99999.9
+
+length = input( 14 )
+vrsi = ta.rsi(close, length)
+ma_rsi = ta.sma(vrsi, 5)
+ma200 = ta.sma(close, 200)
+
+[supertrend, direction] = ta.supertrend(2.5, 10)
+plot(supertrend)
+
+// 시작시간, 종료시간 설정
+// 1월 Jan, 2월 Feb, 3월 Mar, 4월 Apr, 5월 May, 6월 Jun, 7월 Jul, 8월 Aug, 9월 Sep, 10월 Oct, 11월 Nov, 12월 Dec
+start_time = input.time(timestamp("21 May 2023 06:25:00 +04:00"), title="자동매매 시작")
+end_time = input.time(timestamp("26 Apr 2024 00:00:00 +04:00"), title="자동매매 종료")
+in_trade = POA.in_trade(start_time, end_time)
+bgcolor(in_trade ? color.rgb(83, 107, 173, 94) : na)
+
+// 전략 알고리즘 작성
+is_long = true
+is_long_close = true
+is_short = true
+is_short_close = true
+
+// if in_trade 안에서 진입/종료 작성
+
+if in_trade
+    if is_long and ma_rsi < 52
+        diff_val1 = close - open  //봉 길이 계산
+        distance1 = close - supertrend   //종가와 수퍼트렌드 이격거리 계산
+        if direction < 0 and ( (diff_val1 < 150) or (distance1 < 200) )  // 시가와 종가의 차이가 너무 클때 진입 제한함
+            strategy.entry("long", strategy.long, alert_message = POA.entry_message(password))
+        
+    if strategy.position_size > 0
+        stop_value = close * (1-long_trail_percent)
+        long_stop_price := math.max(stop_value, long_stop_price[1])
+        strategy.exit("스탑", "long", stop = long_stop_price, alert_message = POA.exit_message(password))
+
+    if is_short and ma_rsi > 48
+        diff_val2 = open - close
+        distance2 = supertrend - close 
+        if direction > 0 and ( (diff_val2 < 150) or (distance2 < 180) )    // 시가와 종가의 차이가 너무 클때 진입 제한함
+            strategy.entry("short", strategy.short, alert_message = POA.entry_message(password))  
+    if strategy.position_size < 0
+        stop_value = close * (1+short_trail_percent)
+        short_stop_price := math.min(stop_value, short_stop_price[1])
+        strategy.exit("스탑", "short", stop = short_stop_price, alert_message = POA.exit_message(password))
+
+import Cube_Lee/PerformanceTable/1 as PT
+MT = input.bool(true, "Show Monthly Table", tooltip = "전략의 월별수익률을 우측하단에 테이블로 표시합니다.", group = "Performance Table")
+if MT
+    PT.MonthlyTable()
+
+plot(strategy.position_size > 0 ? long_stop_price : na, style = plot.style_linebr, color = color.green, linewidth = 2)
+plot(strategy.position_size < 0 ? short_stop_price : na, style = plot.style_linebr, color = color.red, linewidth = 2)
