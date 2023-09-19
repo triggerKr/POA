@@ -5,7 +5,11 @@
 import dokang/POA/6 as POA
 password = "*****"
 
-strategy("SuperTrend", overlay = true, process_orders_on_close = true, initial_capital = 12000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100)
+strategy("SuperTrend", overlay = true
+, process_orders_on_close = true
+, initial_capital = 12000
+, default_qty_type = strategy.percent_of_equity
+, default_qty_value = 100)
 long_trail_percent = input.float(1.0, "롱 트레일")/100
 long_stop_price = 0.0
 limit_long_value = 1.0 

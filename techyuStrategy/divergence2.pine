@@ -1,0 +1,59 @@
+//@version=5
+indicator("다이버전스 전략", overlay=false)
+
+//1. 지표
+overBuy = 70 //과매수
+overSell = 30 //과매도
+h1 = hline(overBuy)
+h2 = hline(overSell)
+
+// fill 기능
+fill(h1, h2, color=color.purple, transp=90)
+rsi = ta.rsi(close, 14)
+plot(rsi, linewidth=2)
+
+//2. 피봇 찾기 (상승 div- 피봇 로우, 하락 div)
+pivotlow = ta.pivotlow(rsi, 5, 5)
+pivothigh = ta.pivothigh(rsi, 5, 5)
+
+//3. 다이버전스 찾기
+
+// regular 상승다이버전스 ==> 지표 피봇저점은 상승, 가격 저점은 하락
+osc_higher_low = pivotlow > ta.valuewhen(pivotlow, pivotlow[1], 1)
+price_lower_low = low < ta.valuewhen(pivotlow, low[1], 1)
+is_regular_bullish_divergence = osc_higher_low and price_lower_low
+
+// regular 하락다이버전스 ==> 지표 피봇고점은 하락, 가격 고점은 상승
+osc_lower_high = pivothigh < ta.valuewhen(pivothigh, pivothigh[1], 1)
+price_higher_high = high > ta.valuewhen(pivothigh, high[1], 1)
+is_regular_bearish_divergence = osc_lower_high and price_higher_high
+
+
+
+//4. 전략 진입 | 종료
+long_condition = is_regular_bullish_divergence
+short_condition = is_regular_bearish_divergence
+
+// 이전 진입 가격 및 종료 조건
+//현재 저가와 진입당시의 저가를 추적하는 변수 
+var float entry_price = na
+var bool is_long_position = na
+if (long_condition)
+    // 진입 시에 진입당시의 저가를 현재 저가로 설정
+    entryLow := low
+    is_long_position :=true;
+    strategy.entry("Long", strategy.long, qty=1) // 포지션 크기 설정 필요
+
+if (short_condition)
+    strategy.entry("Short", strategy.short, qty=1) // 포지션 크기 설정 필요
+
+
+
+// 현재 저가가 진입당시의 저가보다 낮아지면 포지션 정리
+if (low < entryLow)
+    strategy.close("Long")
+
+
+// 포지션 정리 조건: 하락 다이버전스 또는 RSI가 50을 돌파할 때
+close_condition = is_regular_bearish_divergence or ta.crossover(rsi, 50)
+
