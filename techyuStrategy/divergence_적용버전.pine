@@ -1,0 +1,32 @@
+//@version=5
+//@strategy_alert_message {{strategy.order.alert_message}}
+import dokang/POA/12 as POA
+password = "1q2w3e4r%t"
+
+// 시작시간, 종료시간 설정
+start_time = input.time(timestamp("2023-09-19T21:50:00+09:00"), title="자동매매 시작")
+end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
+
+in_trade = POA.in_trade(start_time, end_time)
+bgcolor(in_trade ? color.rgb(83, 107, 173, 94) : na)
+
+
+// 전략스크립트
+strategy("테스트1",
+ overlay = true,
+ process_orders_on_close = true,
+ initial_capital = 76)
+
+// 전략 알고리즘 작성
+is_long = true
+is_long_close = true
+is_short = true
+is_short_close = true
+
+if is_long
+    pstrategy.entry("롱", strategy.long, alert_message = POA.entry_message(password))
+if is_long_close
+    pstrategy.close("롱", comment = "롱 종료", alert_message = POA.close_message(password))
+
+
+    

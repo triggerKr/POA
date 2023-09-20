@@ -1,0 +1,18 @@
+//@version=5
+//@strategy_alert_message {{strategy.order.alert_message}}
+
+strategy("security", overlay=true)
+
+close_4h = request.security(syminfo.tickerid,"240", close) //240분은 4시간봉 종가를 가져옴.
+
+close_4h_2 = request.security_lower_tf(syminfo.tickerid,"240",close)
+
+plot(close_4h)
+
+if bar_index == last_bar_index -1
+    label.new(bar_index, high, str.toString(close_4h_2))
+
+
+    
+
+
