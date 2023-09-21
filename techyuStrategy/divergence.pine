@@ -1,5 +1,22 @@
 //@version=5
-strategy("다이버전스 전략", overlay=false)
+//@strategy_alert_message {{strategy.order.alert_message}}
+import dokang/POA/12 as POA
+password = "1q2w3e4r%t"
+
+// 시작시간, 종료시간 설정
+start_time = input.time(timestamp("2023-09-19T22:00:00+09:00"), title="자동매매 시작")
+end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
+
+in_trade = POA.in_trade(start_time, end_time)
+bgcolor(in_trade ? color.rgb(83, 107, 173, 94) : na)
+
+
+strategy("다이버전스 전략",
+ overlay = true,
+ process_orders_on_close = true,
+ initial_capital = 100,
+ default_qty_type = strategy.fixed, 
+ default_qty_value = 0.001)
 
 //1. 지표
 overBuy = 70 //과매수
@@ -58,23 +75,24 @@ plot( pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.
 
 
 // bar_index 표시
-label.new(bar_index, na, "index", color=color.green, yloc=yloc.abovebar ,size=size.small,tooltip=str.tostring(bar_index))
+//label.new(bar_index, na, "index", color=color.green, yloc=yloc.abovebar ,size=size.small,tooltip=str.tostring(bar_index))
 
 // 오픈된 포지션이 있을때에만 가장 최근의 entry_bar_index 표시
 recent_entry_bar_index = strategy.opentrades > 0 ? strategy.opentrades.entry_bar_index(strategy.opentrades-1) : na
-label.new(recent_entry_bar_index, na, "entry_index", color= color.white, style=label.style_label_up ,yloc=yloc.belowbar ,size=size.small,tooltip=str.tostring(recent_entry_bar_index))
+//label.new(recent_entry_bar_index, na, "entry_index", color= color.white, style=label.style_label_up ,yloc=yloc.belowbar ,size=size.small,tooltip=str.tostring(recent_entry_bar_index))
 
 // 현재 bar_index로부터 가장 최근의 entry_bar_index 뺀 결과
 barsSinceRecentEntry = strategy.opentrades > 0 ?  bar_index - strategy.opentrades.entry_bar_index(strategy.opentrades-1) : na
-label.new(time, na, str.tostring(barsSinceRecentEntry), color= color.purple, textcolor = color.white, style=label.style_label_up ,xloc=xloc.bar_time,yloc=yloc.belowbar ,size=size.small)
+//label.new(time, na, str.tostring(barsSinceRecentEntry), color= color.purple, textcolor = color.white, style=label.style_label_up ,xloc=xloc.bar_time,yloc=yloc.belowbar ,size=size.small)
 //plot(barsSinceRecentEntry? low[barsSinceRecentEntry] : na, linewidth=2, color=color.yellow, style=plot.style_linebr)
 ///end of 진입시의 저가 low[barsSinceRecentEntry]
 
 
 is_long = is_regular_bullish_divergence   
 
-if( is_long)
-    strategy.entry( "롱", strategy.long)
+if in_trade
+    if( is_long)
+        strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
 
 var is_long_close = false
 if( is_regular_bearish_divergence ) // 하락다이버전스가 뜨던가,
@@ -84,15 +102,17 @@ if( low[barsSinceRecentEntry] > low + 50 ) // 아니면 진입시점의 가격�
 if( low[barsSinceRecentEntry] < low - 1500 ) // 아니면 진입시점의 가격보다 현재 저가가 1000 이상 커진경우 ( 익절 )   
     is_long_close := true
 
-if( is_long_close )
-    strategy.close( "롱")
+if in_trade
+    if( is_long_close )
+        strategy.close( "롱", comment = "롱 종료", alert_message = POA.close_message(password))
 
 
 
 is_short = is_regular_bearish_divergence   
 
-if( is_short)
-    strategy.entry( "숏", strategy.short)
+if in_trade
+    if( is_short)
+        strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
 
 var is_shrt_close = false
 if( is_regular_bullish_divergence ) // 하락다이버전스가 뜨던가,
@@ -104,8 +124,10 @@ if( high[barsSinceRecentEntry] > high + 1500  ) // 아니면 진입시점의 가
      
 
 //  숏 포지션 정리.
-if( is_shrt_close )
-    strategy.close( "숏")
+if in_trade
+    if( is_shrt_close )
+        strategy.close( "숏", comment = "숏 종료",  alert_message = POA.entry_message(password))
+
 
 
 
