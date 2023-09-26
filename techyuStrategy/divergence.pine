@@ -30,22 +30,22 @@ rsi = ta.rsi( close, 14)
 plot( rsi, linewidth = 2)
 
 //2. 피봇 찾기 ( 상승 div- 피봇 로우, 하락div )
-pivotlow = ta.pivotlow(rsi, 5, 5)
-pivothigh = ta.pivothigh(rsi, 5, 5) 
-//plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5)
+pivotlow = ta.pivotlow(rsi, 5, 5) // v자 저점 : 왼쪽 봉, 오른쪽 봉의 갯수
+pivothigh = ta.pivothigh(rsi, 5, 5) // v자 고점
+//plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5) // pot.style_linebr :: 값이 없는곳은 안그려지게 하는 옵션
 
 //3. 다이버전스 찾기
 
 // regular 상승다이버전스 ==> 지표 피봇저점은 상승, 가격 저점은 하락
-prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1)
-osc_higher_low = pivotlow ? pivotlow > prev_pivotlow: false
+prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1)          // 바로 이전 pivot low
+osc_higher_low = pivotlow ? pivotlow > prev_pivotlow: false // 피봇저점이 상승이면 true
 isUnderSell = pivotlow < overSell
-bgcolor( osc_higher_low ? color.rgb(76, 175, 79, 90) : na, offset = -5 )
+bgcolor( osc_higher_low ? color.rgb(76, 175, 79, 90) : na, offset = -5 ) // 흐린 녹색
 
 prev_low = ta.valuewhen(pivotlow, low[5], 1)
 //price_lower_low = pivotlow ? 가격의 저점은 하락 : false
 price_lower_low = pivotlow ? low[5] < prev_low : false
-bgcolor( price_lower_low ? color.rgb(255,153,0,90) : na, offset = -5)
+bgcolor( price_lower_low ? color.rgb(255,153,0,90) : na, offset = -5) //흐린 오렌지색
 
 is_regular_bullish_divergence = osc_higher_low and price_lower_low and isUnderSell
 //bgcolor( is_regular_bullish_divergence ?  color.green: na, offset = -5)
@@ -71,7 +71,7 @@ plot( pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.
 
 
 
-//4. 전략 진입 | 종료
+//4. 전략 진입 | 종료 ( 진입은 기술 종료는 예술 )
 
 
 // bar_index 표시
