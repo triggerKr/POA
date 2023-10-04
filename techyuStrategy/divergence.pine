@@ -4,7 +4,7 @@ import dokang/POA/12 as POA
 password = "1q2w3e4r%t"
 
 // 시작시간, 종료시간 설정
-start_time = input.time(timestamp("2023-09-19T22:00:00+09:00"), title="자동매매 시작")
+start_time = input.time(timestamp("2023-10-04T18:16:00+09:00"), title="자동매매 시작")
 end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
 
 in_trade = POA.in_trade(start_time, end_time)
@@ -12,7 +12,7 @@ bgcolor(in_trade ? color.rgb(83, 107, 173, 94) : na)
 
 
 strategy("다이버전스 전략",
- overlay = true,
+ overlay = false,
  process_orders_on_close = true,
  initial_capital = 100,
  default_qty_type = strategy.fixed, 
@@ -30,22 +30,23 @@ rsi = ta.rsi( close, 14)
 plot( rsi, linewidth = 2)
 
 //2. 피봇 찾기 ( 상승 div- 피봇 로우, 하락div )
-pivotlow = ta.pivotlow(rsi, 5, 5) // v자 저점 : 왼쪽 봉, 오른쪽 봉의 갯수
-pivothigh = ta.pivothigh(rsi, 5, 5) // v자 고점
-//plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5) // pot.style_linebr :: 값이 없는곳은 안그려지게 하는 옵션
+pivotlow = ta.pivotlow(rsi, 5, 5)
+pivothigh = ta.pivothigh(rsi, 5, 5) 
+plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5) //저점마다 그린 점이 찍힘.
+plot( pivothigh, color = color.rgb(228, 22, 81), linewidth=3 , style=plot.style_linebr, offset = -5) //저점마다 그린 점이 찍힘.
 
 //3. 다이버전스 찾기
 
 // regular 상승다이버전스 ==> 지표 피봇저점은 상승, 가격 저점은 하락
-prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1)          // 바로 이전 pivot low
-osc_higher_low = pivotlow ? pivotlow > prev_pivotlow: false // 피봇저점이 상승이면 true
-isUnderSell = pivotlow < overSell
-bgcolor( osc_higher_low ? color.rgb(76, 175, 79, 90) : na, offset = -5 ) // 흐린 녹색
+prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1)
+osc_higher_low = pivotlow ? pivotlow > prev_pivotlow: false
+isUnderSell = pivotlow < overSell // 과매도 값은 30 인데,, pivotlow라는값은 rsi값이므로 0 ~ 100 사이의 값임.
+bgcolor( osc_higher_low ? color.rgb(76, 175, 79, 90) : na, offset = -5 )
 
 prev_low = ta.valuewhen(pivotlow, low[5], 1)
 //price_lower_low = pivotlow ? 가격의 저점은 하락 : false
 price_lower_low = pivotlow ? low[5] < prev_low : false
-bgcolor( price_lower_low ? color.rgb(255,153,0,90) : na, offset = -5) //흐린 오렌지색
+bgcolor( price_lower_low ? color.rgb(255,153,0,90) : na, offset = -5)
 
 is_regular_bullish_divergence = osc_higher_low and price_lower_low and isUnderSell
 //bgcolor( is_regular_bullish_divergence ?  color.green: na, offset = -5)
@@ -57,7 +58,7 @@ plot( pivotlow ? pivotlow : na, color = is_regular_bullish_divergence ? color.gr
 // regular 하락다이버전스 ==> 지표 피봇고점은 하락, 가격 고점은 상승
 prev_pivothigh = ta.valuewhen(pivothigh , pivothigh, 1)
 osc_lower_high = pivothigh ? pivothigh < prev_pivothigh : false
-isOverBuy = pivothigh > overBuy
+isOverBuy = pivothigh > overBuy // pivothigh는 0 ~ 100 사이에 있는 rsi값임. ,, overBuy 는 80같은 값
 bgcolor( osc_lower_high ? color.rgb(76, 175, 79, 90) : na, offset = -5 )
 
 prev_high = ta.valuewhen( pivothigh, high[5], 1 )
@@ -71,7 +72,7 @@ plot( pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.
 
 
 
-//4. 전략 진입 | 종료 ( 진입은 기술 종료는 예술 )
+//4. 전략 진입 | 종료
 
 
 // bar_index 표시
@@ -97,9 +98,9 @@ if in_trade
 var is_long_close = false
 if( is_regular_bearish_divergence ) // 하락다이버전스가 뜨던가,
     is_long_close := true
-if( low[barsSinceRecentEntry] > low + 50 ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 손절 )
+if( low[barsSinceRecentEntry] > low + 100 ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 손절 )
     is_long_close := true
-if( low[barsSinceRecentEntry] < low - 1500 ) // 아니면 진입시점의 가격보다 현재 저가가 1000 이상 커진경우 ( 익절 )   
+if( low[barsSinceRecentEntry] < low - 500 ) // 아니면 진입시점의 가격보다 현재 저가가 1000 이상 커진경우 ( 익절 )   
     is_long_close := true
 
 if in_trade
@@ -115,11 +116,11 @@ if in_trade
         strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
 
 var is_shrt_close = false
-if( is_regular_bullish_divergence ) // 하락다이버전스가 뜨던가,
+if( is_regular_bullish_divergence ) // 상승다이버전스가 뜨던가,
     is_shrt_close :=  true
-if( high[barsSinceRecentEntry] < high - 50 ) // 아니면 진입시점의 가격보다 현재 고가가 100을 더해도 큰경우 ( 손절 )
+if( high[barsSinceRecentEntry] < high - 100 ) // 아니면 진입시점의 가격보다 현재 고가가 100을 더해도 큰경우 ( 손절 )
     is_shrt_close :=  true
-if( high[barsSinceRecentEntry] > high + 1500  ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 익절 )
+if( high[barsSinceRecentEntry] > high + 500  ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 익절 )
     is_shrt_close :=  true
      
 
