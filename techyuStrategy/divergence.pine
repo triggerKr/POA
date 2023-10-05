@@ -4,7 +4,7 @@ import dokang/POA/12 as POA
 password = "1q2w3e4r%t"
 
 // 시작시간, 종료시간 설정
-start_time = input.time(timestamp("2023-10-04T18:16:00+09:00"), title="자동매매 시작")
+start_time = input.time(timestamp("2023-10-05T21:48:00+09:00"), title="자동매매 시작")
 end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
 
 in_trade = POA.in_trade(start_time, end_time)
@@ -19,10 +19,10 @@ strategy("다이버전스 전략",
  default_qty_value = 0.001)
 
 //1. 지표
-overBuy = 70 //과매수
-overSell = 30 //과매도
-h1 = hline(overBuy)
-h2 = hline(overSell)
+overBuy = 50//70 //과매수
+overSell = 50//30 //과매도
+h1 = hline(70)//hline(overBuy)
+h2 = hline(30)//hline(overSell)
 
 // fill 기능
 fill( h1,h2, color=color.new(color.purple, 90))
