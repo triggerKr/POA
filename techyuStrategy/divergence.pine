@@ -89,13 +89,22 @@ barsSinceRecentEntry = strategy.opentrades > 0 ?  bar_index - strategy.opentrade
 ///end of 진입시의 저가 low[barsSinceRecentEntry]
 
 
+// 현재 포지션 크기를 가져오기
+current_position_size = strategy.position_size
+
+// 현재 포지션에 진입되어 있는지 확인
+is_not_in_position = current_position_size == 0
+// 출력
+//plot(is_in_position ? 1 : 0, color=color.green, style=plot.style_columns, title="In Position")
+
+
 is_long = is_regular_bullish_divergence   
 
 if in_trade
-    if( is_long)
+    if( is_long and is_not_in_position )
         strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
 
-var is_long_close = false
+is_long_close = false
 if( is_regular_bearish_divergence ) // 하락다이버전스가 뜨던가,
     is_long_close := true
 if( low[barsSinceRecentEntry] > low + 100 ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 손절 )
@@ -112,10 +121,10 @@ if in_trade
 is_short = is_regular_bearish_divergence   
 
 if in_trade
-    if( is_short)
+    if( is_short and is_not_in_position)
         strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
 
-var is_shrt_close = false
+is_shrt_close = false
 if( is_regular_bullish_divergence ) // 상승다이버전스가 뜨던가,
     is_shrt_close :=  true
 if( high[barsSinceRecentEntry] < high - 100 ) // 아니면 진입시점의 가격보다 현재 고가가 100을 더해도 큰경우 ( 손절 )
@@ -128,9 +137,3 @@ if( high[barsSinceRecentEntry] > high + 500  ) // 아니면 진입시점의 가�
 if in_trade
     if( is_shrt_close )
         strategy.close( "숏", comment = "숏 종료",  alert_message = POA.entry_message(password))
-
-
-
-
-
-    
