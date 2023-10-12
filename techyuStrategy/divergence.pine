@@ -71,18 +71,14 @@ plotshape( is_regular_bearish_divergence ? pivothigh : na , offset = -5 , title=
 plot( pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.red : na , offset = -5 , linewidth= 2)
 
 
-
 //4. 전략 진입 | 종료
 
-
-// bar_index 표시
-//label.new(bar_index, na, "index", color=color.green, yloc=yloc.abovebar ,size=size.small,tooltip=str.tostring(bar_index))
-
 // 오픈된 포지션이 있을때에만 가장 최근의 entry_bar_index 표시
-recent_entry_bar_index = strategy.opentrades > 0 ? strategy.opentrades.entry_bar_index(strategy.opentrades-1) : na
+//recent_entry_bar_index = strategy.opentrades > 0 ? strategy.opentrades.entry_bar_index(strategy.opentrades-1) : na
 //label.new(recent_entry_bar_index, na, "entry_index", color= color.white, style=label.style_label_up ,yloc=yloc.belowbar ,size=size.small,tooltip=str.tostring(recent_entry_bar_index))
 
-// 현재 bar_index로부터 가장 최근의 entry_bar_index 뺀 결과
+
+//진입시점의 저가를 알기 위해                       // 현재 bar_index로부터 가장 최근의 entry_bar_index 뺀 결과
 barsSinceRecentEntry = strategy.opentrades > 0 ?  bar_index - strategy.opentrades.entry_bar_index(strategy.opentrades-1) : na
 //label.new(time, na, str.tostring(barsSinceRecentEntry), color= color.purple, textcolor = color.white, style=label.style_label_up ,xloc=xloc.bar_time,yloc=yloc.belowbar ,size=size.small)
 //plot(barsSinceRecentEntry? low[barsSinceRecentEntry] : na, linewidth=2, color=color.yellow, style=plot.style_linebr)
@@ -103,16 +99,16 @@ if in_trade                                        // 현재 포지션에 진입
 is_long_close = false
 if( is_regular_bearish_divergence ) // 하락다이버전스가 뜨던가,
     is_long_close := true
-if( low[barsSinceRecentEntry] > low + 100 ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 손절 )
-    is_long_close := true
-if( low[barsSinceRecentEntry] < low - 500 ) // 아니면 진입시점의 가격보다 현재 저가가 1000 이상 커진경우 ( 익절 )   
-    is_long_close := true
+//if( low[barsSinceRecentEntry] > low + 100 ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 손절 )
+//    is_long_close := true
+//if( low[barsSinceRecentEntry] < low - 500 ) // 아니면 진입시점의 가격보다 현재 저가가 1000 이상 커진경우 ( 익절 )   
+//    is_long_close := true
 
 if in_trade
     if( is_long_close )
         strategy.close( "롱", comment = "롱 종료", alert_message = POA.close_message(password))
 
-// 트레일링 스탑
+// 트레일링 스탑 ( 익절도 되고 손절도 됨. )
 if strategy.position_size > 0 // 롱 포지션이 있으면 2% 밑에서 계속 stop value가 계산됨.
     stop_value = close * ( 1- long_trail_percent )
     long_stop_price := math.max( stop_value, long_stop_price[1] ) // 내가 이전에 계산해 놨던 long stop proce를 가져와서 비교하여 max저장.
@@ -141,18 +137,18 @@ if in_trade
         strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
         strategy.exit("스탑", "숏", stop = close * ( 1 + short_trail_percent))
 
-is_shrt_close = false
+is_short_close = false
 if( is_regular_bullish_divergence ) // 상승다이버전스가 뜨던가,
-    is_shrt_close :=  true
-if( high[barsSinceRecentEntry] < high - 100 ) // 아니면 진입시점의 가격보다 현재 고가가 100을 더해도 큰경우 ( 손절 )
-    is_shrt_close :=  true
-if( high[barsSinceRecentEntry] > high + 500  ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 익절 )
-    is_shrt_close :=  true
+    is_short_close :=  true
+//if( high[barsSinceRecentEntry] < high - 100 ) // 아니면 진입시점의 가격보다 현재 고가가 100을 더해도 큰경우 ( 손절 )
+//    is_short_close :=  true
+//if( high[barsSinceRecentEntry] > high + 500  ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 익절 )
+//    is_short_close :=  true
      
 
 //  숏 포지션 정리.
 if in_trade
-    if( is_shrt_close )
+    if( is_short_close )
         strategy.close( "숏", comment = "숏 종료",  alert_message = POA.entry_message(password))
 
 // 트레일링 스탑
