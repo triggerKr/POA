@@ -89,7 +89,7 @@ barsSinceRecentEntry = strategy.opentrades > 0 ?  bar_index - strategy.opentrade
 ///end of 진입시의 저가 low[barsSinceRecentEntry]
 
 // 롱 트레일링 스탑
-long_trailing_percent = input.float(2.0, "롱 트레일")/100
+long_trail_percent = input.float(2.0, "롱 트레일")/100
 long_stop_price = 0.0 // 롱스탑 프라이스 초기갑.
 
 
@@ -122,8 +122,8 @@ else
 if strategy.position_size > 0  // 계속 stop주문은 변경이 된다. 
     strategy.exit("스탑", "롱", stop= long_stop_price )
 
-plot( strategy.position_size > 0 ? long_stop_price : na )
-
+plot( strategy.position_size > 0 ? long_stop_price : na , style= plot.style_linebr) // 롱스탑값이 없으면 안그리고 있을 때 그림.
+// End of 트레일링 스탑
 
 
 is_short = is_regular_bearish_divergence   
