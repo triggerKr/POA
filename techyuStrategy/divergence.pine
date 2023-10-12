@@ -4,7 +4,7 @@ import dokang/POA/12 as POA
 password = "1q2w3e4r%t"
 
 // 시작시간, 종료시간 설정
-start_time = input.time(timestamp("2023-10-05T21:48:00+09:00"), title="자동매매 시작")
+start_time = input.time(timestamp("2023-10-11T18:26:00+09:00"), title="자동매매 시작")
 end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
 
 in_trade = POA.in_trade(start_time, end_time)
@@ -32,13 +32,13 @@ plot( rsi, linewidth = 2)
 //2. 피봇 찾기 ( 상승 div- 피봇 로우, 하락div )
 pivotlow = ta.pivotlow(rsi, 5, 5)
 pivothigh = ta.pivothigh(rsi, 5, 5) 
-plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5) //저점마다 그린 점이 찍힘.
+plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5) //저점마다 그린 점이 찍힘. plot.style_linebr : 값이 없는곳은 안 그려짐.
 plot( pivothigh, color = color.rgb(228, 22, 81), linewidth=3 , style=plot.style_linebr, offset = -5) //저점마다 그린 점이 찍힘.
 
 //3. 다이버전스 찾기
 
 // regular 상승다이버전스 ==> 지표 피봇저점은 상승, 가격 저점은 하락
-prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1)
+prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1) // pivotlow 가 있으면 pivotlow를 가져올꺼다,, 1개 전의 pivotlow
 osc_higher_low = pivotlow ? pivotlow > prev_pivotlow: false
 isUnderSell = pivotlow < overSell // 과매도 값은 30 인데,, pivotlow라는값은 rsi값이므로 0 ~ 100 사이의 값임.
 bgcolor( osc_higher_low ? color.rgb(76, 175, 79, 90) : na, offset = -5 )
@@ -88,21 +88,17 @@ barsSinceRecentEntry = strategy.opentrades > 0 ?  bar_index - strategy.opentrade
 //plot(barsSinceRecentEntry? low[barsSinceRecentEntry] : na, linewidth=2, color=color.yellow, style=plot.style_linebr)
 ///end of 진입시의 저가 low[barsSinceRecentEntry]
 
-
-// 현재 포지션 크기를 가져오기
-current_position_size = strategy.position_size
-
-// 현재 포지션에 진입되어 있는지 확인
-is_not_in_position = current_position_size == 0
-// 출력
-//plot(is_in_position ? 1 : 0, color=color.green, style=plot.style_columns, title="In Position")
+// 롱 트레일링 스탑
+long_trailing_percent = input.float(2.0, "롱 트레일")/100
+long_stop_price = 0.0 // 롱스탑 프라이스 초기갑.
 
 
 is_long = is_regular_bullish_divergence   
 
-if in_trade
-    if( is_long and is_not_in_position )
+if in_trade                                        // 현재 포지션에 진입되어 있는지 확인
+    if( is_long and strategy.position_size == 0 ) // strategy.position_size > 0 롱포지션 진입 중 , strategy.position_size < 0 숏포지션 진입 중
         strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
+        strategy.exit("스탑","롱", stop= close * ( 1- long_trail_percent ) )
 
 is_long_close = false
 if( is_regular_bearish_divergence ) // 하락다이버전스가 뜨던가,
@@ -115,6 +111,18 @@ if( low[barsSinceRecentEntry] < low - 500 ) // 아니면 진입시점의 가격�
 if in_trade
     if( is_long_close )
         strategy.close( "롱", comment = "롱 종료", alert_message = POA.close_message(password))
+
+// 트레일링 스탑
+if strategy.position_size > 0 // 롱 포지션이 있으면 2% 밑에서 계속 stop value가 계산됨.
+    stop_value = close * ( 1- long_trail_percent )
+    long_stop_price := math.max( stop_value, long_stop_price[1] ) // 내가 이전에 계산해 놨던 long stop proce를 가져와서 비교하여 max저장.
+else 
+    long_stop_price := 0.0 // 롱 스탑 을 무력화.
+
+if strategy.position_size > 0  // 계속 stop주문은 변경이 된다. 
+    strategy.exit("스탑", "롱", stop= long_stop_price )
+
+plot( strategy.position_size > 0 ? long_stop_price : na )
 
 
 
