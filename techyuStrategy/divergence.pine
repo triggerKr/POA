@@ -94,7 +94,7 @@ is_long = is_regular_bullish_divergence
 if in_trade                                        // 현재 포지션에 진입되어 있는지 확인
     if( is_long and strategy.position_size == 0 ) // strategy.position_size > 0 롱포지션 진입 중 , strategy.position_size < 0 숏포지션 진입 중
         strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
-        strategy.exit("스탑","롱", stop= close * ( 1- long_trail_percent ) )
+        strategy.exit("스탑","롱", stop= close * ( 1- long_trail_percent ), alert_message = POA.exit_message(password) )
 
 is_long_close = false
 if( is_regular_bearish_divergence ) // 하락다이버전스가 뜨던가,
@@ -116,8 +116,8 @@ else
     long_stop_price := 0.0 // 롱 스탑 을 무력화.
 
 if strategy.position_size > 0  // 계속 stop주문은 변경이 된다. 
-    strategy.exit("스탑", "롱", stop= long_stop_price )
-
+    strategy.exit("스탑", "롱", stop= long_stop_price, alert_message = POA.exit_message(password) )
+                                                                // 스타일 라인브레이크 : 안그리겠다.
 plot( strategy.position_size > 0 ? long_stop_price : na , style= plot.style_linebr, color=color.green, linewidth=2) // 롱스탑값이 없으면 안그리고 있을 때 그림.
 // End of 트레일링 스탑
 
@@ -136,7 +136,7 @@ is_short = is_regular_bearish_divergence
 if in_trade
     if( is_short and strategy.position_size == 0)
         strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
-        strategy.exit("스탑", "숏", stop= close * ( 1 + short_trail_percent) )
+        strategy.exit("스탑", "숏", stop= close * ( 1 + short_trail_percent) , alert_message = POA.exit_message(password))
 
 is_short_close = false
 if( is_regular_bullish_divergence ) // 상승다이버전스가 뜨던가,
@@ -152,6 +152,7 @@ if in_trade
     if( is_short_close )
         strategy.close( "숏", comment = "숏 종료",  alert_message = POA.close_message(password))
 
+
 // 트레일링 스탑
 if strategy.position_size < 0 // 숏 포지션이 있으면 2% 위에서 계속 stop value가 계산됨.
     stop_value = close * ( 1 + short_trail_percent )
@@ -160,7 +161,7 @@ else
     short_stop_price := 99999.9 // 숏 스탑 을 무력화.
 
 if strategy.position_size < 0  // 숏 포지션이 존재할 때만 stop주문을 넣는다. 
-    strategy.exit("스탑", "숏", stop= short_stop_price )
+    strategy.exit("스탑", "숏", stop= short_stop_price,  alert_message = POA.exit_message(password))
 
 plot( strategy.position_size < 0 ? short_stop_price : na , style= plot.style_linebr, color=color.red, linewidth=2) // 롱스탑값이 없으면 안그리고 있을 때 그림.
 // End of 트레일링 스탑
