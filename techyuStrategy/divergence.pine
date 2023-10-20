@@ -145,7 +145,7 @@ if( is_regular_bullish_divergence ) // 상승다이버전스가 뜨던가,
 //    is_short_close :=  true
 //if( high[barsSinceRecentEntry] > high + 500  ) // 아니면 진입시점의 가격보다 현재 저가가 100을 빼고도 작을경우 ( 익절 )
 //    is_short_close :=  true
-     
+
 
 //  숏 포지션 정리.
 if in_trade
