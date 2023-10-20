@@ -1,7 +1,7 @@
 //@version=5
 //@strategy_alert_message {{strategy.order.alert_message}}
 import dokang/POA/12 as POA
-password = "1q2w3e4r%t"
+password = "1q2w3e4r%t" //bot의 비밀번호
 
 // 시작시간, 종료시간 설정
 start_time = input.time(timestamp("2023-10-11T18:26:00+09:00"), title="자동매매 시작")
