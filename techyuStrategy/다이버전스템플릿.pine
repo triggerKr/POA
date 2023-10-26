@@ -1,4 +1,20 @@
 //@version=5
+//@strategy_alert_message {{strategy.order.alert_message}}
+import dokang/POA/12 as POA
+password = "1q2w3e4r%t"
+
+// 시작시간, 종료시간 설정
+start_time = input.time(timestamp("2023-10-24T19:36:00+09:00"), title="자동매매 시작")
+end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
+
+in_trade = POA.in_trade(start_time, end_time)
+bgcolor(in_trade ? color.rgb(83, 107, 173, 94) : na)
+
+//
+// 다이버전스 템플릿에 과매수/과매도 조건 추가.
+//
+//
+//
 strategy("다이버전스 템플릿", overlay=false, process_orders_on_close = true, initial_capital = 1000000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100)
 
 left = input.int(5, "left")
@@ -7,6 +23,11 @@ right = input.int(5, "right")
 // 1. 지표
 osc = ta.rsi(close, 14)
 plot(osc, linewidth = 2)
+overBuy = 50//70 //과매수
+overSell = 50//30 //과매도
+
+h1 = hline(70)//hline(overBuy)
+h2 = hline(30)//hline(overSell)
 
 // 2. 피봇 찾기 (상승div-피봇로우, 하락div-피봇하이)
 pivotlow = ta.pivotlow(osc, left, right) 
@@ -19,31 +40,44 @@ is_pivothigh = not na(pivothigh)
 // 상승 다이버전스
 prev_pivotlow = ta.valuewhen(is_pivotlow, pivotlow, 1)
 osc_higher_low =  is_pivotlow ? pivotlow > prev_pivotlow : false 
+isUnderSell = pivotlow < overSell // 과매도 값은 30 인데,, pivotlow라는값은 rsi값이므로 0 ~ 100 사이의 값임.
 prev_low = ta.valuewhen(is_pivotlow, low[right], 1)
 price_lower_low = is_pivotlow ? low[right] < prev_low : false
-is_regular_bullish_divergence = osc_higher_low and price_lower_low
+is_regular_bullish_divergence = osc_higher_low and price_lower_low and isUnderSell
 plotshape(is_regular_bullish_divergence ? is_pivotlow  : na, offset = -right, title="상승 다이버전스", text = "Bull", style = shape.labelup, color = color.green, textcolor = color.white, location = location.bottom)
 plot(is_pivotlow ? pivotlow : na, color = is_regular_bullish_divergence ? color.green : na, offset = -right, linewidth = 2)
 
 // 히든 상승다이버전스 
 osc_lower_low = is_pivotlow ? pivotlow < prev_pivotlow : false
+isUnderSell := pivotlow < overSell // 과매도 값은 30 인데,, pivotlow라는값은 rsi값이므로 0 ~ 100 사이의 값임.
 price_higher_low = is_pivotlow ? low[right] > prev_low : false
-is_hidden_bullish_divergence = osc_lower_low and price_higher_low
+is_hidden_bullish_divergence = osc_lower_low and price_higher_low and isUnderSell
 plotshape(is_hidden_bullish_divergence ? is_pivotlow : na, offset = -right, title="히든 상승 다이버전스", text = "H Bull", style = shape.labelup, color = color.green, textcolor = color.white, location = location.bottom)
 plot(is_pivotlow ? pivotlow : na, color = is_hidden_bullish_divergence ? color.green : na, offset = -right, linewidth = 2)
 
 // 하락다이버전스
 prev_pivothigh = ta.valuewhen(is_pivothigh, pivothigh, 1)
 osc_lower_high = is_pivothigh ? pivothigh < prev_pivothigh : false
+isOverBuy = pivothigh > overBuy // pivothigh는 0 ~ 100 사이에 있는 rsi값임. ,, overBuy 는 80같은 값
 prev_high = ta.valuewhen(is_pivothigh, high[right], 1)
 price_higher_high = is_pivothigh ? high[right] > prev_high : false
-is_regular_bearish_divergence = osc_lower_high and price_higher_high
+is_regular_bearish_divergence = osc_lower_high and price_higher_high and isOverBuy
 plotshape(is_regular_bearish_divergence ? is_pivothigh : na, offset = -right, title="하락 다이버전스", text = "Bear", style = shape.labeldown, color = color.red, textcolor = color.white, location = location.top)
 plot(is_pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.red : na, offset = -right, linewidth = 2)
 
 // 히든 하락 다이버전스
 osc_higher_high = is_pivothigh ? pivothigh > prev_pivothigh : false
+isOverBuy := pivothigh > overBuy // pivothigh는 0 ~ 100 사이에 있는 rsi값임. ,, overBuy 는 80같은 값
 price_lower_high = is_pivothigh ? high[right] < prev_high : false
-is_hidden_bearish_divergence = osc_higher_high and price_lower_high
+is_hidden_bearish_divergence = osc_higher_high and price_lower_high and isOverBuy
 plotshape(is_hidden_bearish_divergence ? is_pivothigh : na, offset = -right, title="히든 하락 다이버전스", text = "H Bear", style = shape.labeldown, color = color.red, textcolor = color.white, location = location.top)
 plot(is_pivothigh ? pivothigh : na, color = is_hidden_bearish_divergence ? color.red : na, offset = -right, linewidth = 2)
+
+
+if is_regular_bullish_divergence or is_hidden_bullish_divergence
+    strategy.entry("롱",strategy.long)
+
+atr = ta.atr(14)
+
+if strategy.position_size== 0
+    strategy.exit("손익절","롱", stop= close - atr, limit = close +atr ,comment_profit="익절", comment_loss="손절")
