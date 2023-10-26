@@ -97,8 +97,8 @@ if in_trade
 if in_trade
     if( is_long_close ) // 하락다이버전스가 뜨면, 롱은 종료 , 숏 진입(숏스탑조건세팅).
         strategy.close( "롱", comment = "롱 종료", alert_message = POA.close_message(password))
-        strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
-        strategy.exit("손익절", "숏", stop= short_stop_price,  alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+        //strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
+        //strategy.exit("손익절", "숏", stop= short_stop_price,  alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
 
 if strategy.position_size > 0
     stop_value = close * ( 1- long_trail_percent )
@@ -125,8 +125,8 @@ if in_trade
 if in_trade
     if( is_short_close ) // 상승다이버전스가 뜨면, 숏은 종료 , 롱 진입(롱스탑조건세팅).
         strategy.close( "숏", comment = "숏 종료", alert_message = POA.close_message(password))
-        strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
-        strategy.exit("손익절", "롱", stop= long_stop_price,  alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+        //strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
+        //strategy.exit("손익절", "롱", stop= long_stop_price,  alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
 
 if strategy.position_size < 0
     stop_value = close * ( 1+ short_trail_percent )
