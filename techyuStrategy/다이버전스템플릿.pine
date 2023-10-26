@@ -1,0 +1,49 @@
+//@version=5
+strategy("다이버전스 템플릿", overlay=false, process_orders_on_close = true, initial_capital = 1000000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100)
+
+left = input.int(5, "left")
+right = input.int(5, "right")
+
+// 1. 지표
+osc = ta.rsi(close, 14)
+plot(osc, linewidth = 2)
+
+// 2. 피봇 찾기 (상승div-피봇로우, 하락div-피봇하이)
+pivotlow = ta.pivotlow(osc, left, right) 
+pivothigh = ta.pivothigh(osc, left, right)
+is_pivotlow = not na(pivotlow)
+is_pivothigh = not na(pivothigh)
+
+// 3. 다이버전스 찾기
+
+// 상승 다이버전스
+prev_pivotlow = ta.valuewhen(is_pivotlow, pivotlow, 1)
+osc_higher_low =  is_pivotlow ? pivotlow > prev_pivotlow : false 
+prev_low = ta.valuewhen(is_pivotlow, low[right], 1)
+price_lower_low = is_pivotlow ? low[right] < prev_low : false
+is_regular_bullish_divergence = osc_higher_low and price_lower_low
+plotshape(is_regular_bullish_divergence ? is_pivotlow  : na, offset = -right, title="상승 다이버전스", text = "Bull", style = shape.labelup, color = color.green, textcolor = color.white, location = location.bottom)
+plot(is_pivotlow ? pivotlow : na, color = is_regular_bullish_divergence ? color.green : na, offset = -right, linewidth = 2)
+
+// 히든 상승다이버전스 
+osc_lower_low = is_pivotlow ? pivotlow < prev_pivotlow : false
+price_higher_low = is_pivotlow ? low[right] > prev_low : false
+is_hidden_bullish_divergence = osc_lower_low and price_higher_low
+plotshape(is_hidden_bullish_divergence ? is_pivotlow : na, offset = -right, title="히든 상승 다이버전스", text = "H Bull", style = shape.labelup, color = color.green, textcolor = color.white, location = location.bottom)
+plot(is_pivotlow ? pivotlow : na, color = is_hidden_bullish_divergence ? color.green : na, offset = -right, linewidth = 2)
+
+// 하락다이버전스
+prev_pivothigh = ta.valuewhen(is_pivothigh, pivothigh, 1)
+osc_lower_high = is_pivothigh ? pivothigh < prev_pivothigh : false
+prev_high = ta.valuewhen(is_pivothigh, high[right], 1)
+price_higher_high = is_pivothigh ? high[right] > prev_high : false
+is_regular_bearish_divergence = osc_lower_high and price_higher_high
+plotshape(is_regular_bearish_divergence ? is_pivothigh : na, offset = -right, title="하락 다이버전스", text = "Bear", style = shape.labeldown, color = color.red, textcolor = color.white, location = location.top)
+plot(is_pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.red : na, offset = -right, linewidth = 2)
+
+// 히든 하락 다이버전스
+osc_higher_high = is_pivothigh ? pivothigh > prev_pivothigh : false
+price_lower_high = is_pivothigh ? high[right] < prev_high : false
+is_hidden_bearish_divergence = osc_higher_high and price_lower_high
+plotshape(is_hidden_bearish_divergence ? is_pivothigh : na, offset = -right, title="히든 하락 다이버전스", text = "H Bear", style = shape.labeldown, color = color.red, textcolor = color.white, location = location.top)
+plot(is_pivothigh ? pivothigh : na, color = is_hidden_bearish_divergence ? color.red : na, offset = -right, linewidth = 2)
