@@ -74,10 +74,69 @@ plotshape(is_hidden_bearish_divergence ? is_pivothigh : na, offset = -right, tit
 plot(is_pivothigh ? pivothigh : na, color = is_hidden_bearish_divergence ? color.red : na, offset = -right, linewidth = 2)
 
 
-if is_regular_bullish_divergence or is_hidden_bullish_divergence
-    strategy.entry("롱",strategy.long)
+//4. 전략 진입 | 종료
 
-atr = ta.atr(14)
+// 스탑 트레일링 
+long_stop_price = 0.0 // 롱스탑 프라이스 초기화 .
+short_stop_price = 99999.9 // 숏스탑 프라이스 초기화 .
+long_trail_percent = input.float(2.0, "롱 트레일")/100
+short_trail_percent = input.float(2.0, "숏 트레일")/100
 
-if strategy.position_size== 0
-    strategy.exit("손익절","롱", stop= close - atr, limit = close +atr ,comment_profit="익절", comment_loss="손절")
+
+// 롱 트레일링 스탑
+
+is_long = is_regular_bullish_divergence or is_hidden_bullish_divergence
+is_long_close = is_regular_bearish_divergence or is_hidden_bearish_divergence
+
+if in_trade
+    if( is_long and strategy.position_size == 0 )
+        strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
+        strategy.exit("손익절","롱", stop= close * ( 1- long_trail_percent ), alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+
+
+if in_trade
+    if( is_long_close ) // 하락다이버전스가 뜨면, 롱은 종료 , 숏 진입(숏스탑조건세팅).
+        strategy.close( "롱", comment = "롱 종료", alert_message = POA.close_message(password))
+        strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
+        strategy.exit("손익절", "숏", stop= short_stop_price,  alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+
+if strategy.position_size > 0
+    stop_value = close * ( 1- long_trail_percent )
+    long_stop_price := math.max( stop_value, long_stop_price[1] ) // 내가 이전에 계산해 놨던 long stop proce를 가져와서 비교하여 max저장.
+else 
+    long_stop_price := 0.0 // 롱 스탑 을 무력화.
+
+if strategy.position_size > 0  // 계속 stop주문은 변경이 된다. 
+    strategy.exit("손익절", "롱", stop= long_stop_price, alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+
+plot( strategy.position_size > 0 ? long_stop_price : na , style= plot.style_linebr, color=color.green, linewidth=2) // 롱스탑값이 없으면 안그리고 있을 때 그림.
+
+// 숏 트레일링 스탑
+
+is_short = is_regular_bearish_divergence or is_hidden_bearish_divergence
+is_short_close = is_regular_bullish_divergence or is_hidden_bullish_divergence
+
+if in_trade
+    if( is_short and strategy.position_size == 0 )
+        strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
+        strategy.exit("손익절","숏", stop= close * ( 1+ long_trail_percent ), alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+
+
+if in_trade
+    if( is_short_close ) // 상승다이버전스가 뜨면, 숏은 종료 , 롱 진입(롱스탑조건세팅).
+        strategy.close( "숏", comment = "숏 종료", alert_message = POA.close_message(password))
+        strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
+        strategy.exit("손익절", "롱", stop= long_stop_price,  alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+
+if strategy.position_size < 0
+    stop_value = close * ( 1+ short_trail_percent )
+    short_stop_price := math.min( stop_value, short_stop_price[1] ) // 내가 이전에 계산해 놨던 long stop proce를 가져와서 비교하여 max저장.
+else 
+    long_stop_price := 99999.9 // 숏 스탑 을 무력화.
+
+if strategy.position_size < 0  // 계속 stop주문은 변경이 된다. 
+    strategy.exit("손익절", "숏", stop= short_stop_price, alert_message = POA.exit_message(password) ,comment_profit="익절", comment_loss="손절")
+
+plot( strategy.position_size < 0 ? short_stop_price : na , style= plot.style_linebr, color=color.red, linewidth=2) // 숏스탑값이 없으면 안그리고 있을 때 그림.
+
+
