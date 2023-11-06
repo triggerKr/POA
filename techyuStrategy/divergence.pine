@@ -4,107 +4,91 @@ import dokang/POA/12 as POA
 password = "1q2w3e4r%t"
 
 // 시작시간, 종료시간 설정
-start_time = input.time(timestamp("2023-10-24T19:36:00+09:00"), title="자동매매 시작")
+start_time = input.time(timestamp("2023-11-06T17:16:00+09:00"), title="자동매매 시작")
 end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
 
 in_trade = POA.in_trade(start_time, end_time)
 bgcolor(in_trade ? color.rgb(83, 107, 173, 94) : na)
 
+//
+// 다이버전스 템플릿에 과매수/과매도 조건 추가. 
+// 롱만 수행하도록 함.
+// 트레일링 스탑으로 테스팅해보니, 4시간봉에서 - 났음. 2%로 하기로 함. 
+//long_trail_percent : 2
+//15m: 4.85 30m: 14.07 1h: 4 2h: 12.79 3h: 14.54 4h: 13.26
 
-strategy("다이버전스 전략",
- overlay = true,
- process_orders_on_close = true,
- initial_capital = 100,
- default_qty_type = strategy.fixed, 
- default_qty_value = 0.001)
+//long_trail_percent : 3
+//15m: 4.35 30m: 19.48 1h: 0.02 2h: 26.6 3h: 22.77 4h: 14.6
 
-//1. 지표
+//long_trail_percent : 4
+//15m: 4.98 30m: 16.08 1h: -13.62 2h: 17.33 3h: 17.82 4h: 9.86
+//
+//
+strategy("다이버전스 전략", overlay=true, process_orders_on_close = true, initial_capital = 100, default_qty_type = strategy.fixed, default_qty_value = 0.001)
+
+left = input.int(5, "left")
+right = input.int(5, "right")
+
+// 1. 지표
+osc = ta.rsi(close, 14)
+plot(osc, linewidth = 2)
 overBuy = 50//70 //과매수
 overSell = 50//30 //과매도
+
 h1 = hline(70)//hline(overBuy)
 h2 = hline(30)//hline(overSell)
 
-// fill 기능
-fill( h1,h2, color=color.new(color.purple, 90))
-rsi = ta.rsi( close, 14)
-plot( rsi, linewidth = 2)
+// 2. 피봇 찾기 (상승div-피봇로우, 하락div-피봇하이)
+pivotlow = ta.pivotlow(osc, left, right) 
+pivothigh = ta.pivothigh(osc, left, right)
+is_pivotlow = not na(pivotlow)
+is_pivothigh = not na(pivothigh)
 
-//2. 피봇 찾기 ( 상승 div- 피봇 로우, 하락div )
-pivotlow = ta.pivotlow(rsi, 5, 5)
-pivothigh = ta.pivothigh(rsi, 5, 5) 
-plot( pivotlow, color = color.green, linewidth=3 , style=plot.style_linebr, offset = -5) //저점마다 그린 점이 찍힘. plot.style_linebr : 값이 없는곳은 안 그려짐.
-plot( pivothigh, color = color.rgb(228, 22, 81), linewidth=3 , style=plot.style_linebr, offset = -5) //저점마다 그린 점이 찍힘.
+// 3. 다이버전스 찾기
 
-//3. 다이버전스 찾기
-
-// regular 상승다이버전스 ==> 지표 피봇저점은 상승, 가격 저점은 하락
-prev_pivotlow = ta.valuewhen(pivotlow, pivotlow, 1) // pivotlow 가 있으면 pivotlow를 가져올꺼다,, 1개 전의 pivotlow
-osc_higher_low = pivotlow ? pivotlow > prev_pivotlow: false
+// 상승 다이버전스
+prev_pivotlow = ta.valuewhen(is_pivotlow, pivotlow, 1)
+osc_higher_low =  is_pivotlow ? pivotlow > prev_pivotlow : false 
 isUnderSell = pivotlow < overSell // 과매도 값은 30 인데,, pivotlow라는값은 rsi값이므로 0 ~ 100 사이의 값임.
-bgcolor( osc_higher_low ? color.rgb(76, 175, 79, 90) : na, offset = -5 )
-
-prev_low = ta.valuewhen(pivotlow, low[5], 1)
-//price_lower_low = pivotlow ? 가격의 저점은 하락 : false
-price_lower_low = pivotlow ? low[5] < prev_low : false
-bgcolor( price_lower_low ? color.rgb(255,153,0,90) : na, offset = -5)
-
+prev_low = ta.valuewhen(is_pivotlow, low[right], 1)
+price_lower_low = is_pivotlow ? low[right] < prev_low : false
 is_regular_bullish_divergence = osc_higher_low and price_lower_low and isUnderSell
-//bgcolor( is_regular_bullish_divergence ?  color.green: na, offset = -5)
+//plotshape(is_regular_bullish_divergence ? is_pivotlow  : na, offset = -right, title="상승 다이버전스", text = "Bull", style = shape.labelup, color = color.green, textcolor = color.white, location = location.bottom)
+//plot(is_pivotlow ? pivotlow : na, color = is_regular_bullish_divergence ? color.green : na, offset = -right, linewidth = 2)
 
-plotshape( is_regular_bullish_divergence ? pivotlow : na , offset = -5 , title="상승 다이버전스", text = 'Bull', style= shape.labelup, color = color.green,textcolor = color.white, location = location.absolute ) 
-plot( pivotlow ? pivotlow : na, color = is_regular_bullish_divergence ? color.green : na , offset = -5 , linewidth= 2)
+// 히든 상승다이버전스 
+osc_lower_low = is_pivotlow ? pivotlow < prev_pivotlow : false
+isUnderSell := pivotlow < overSell // 과매도 값은 30 인데,, pivotlow라는값은 rsi값이므로 0 ~ 100 사이의 값임.
+price_higher_low = is_pivotlow ? low[right] > prev_low : false
+is_hidden_bullish_divergence = osc_lower_low and price_higher_low and isUnderSell
+//plotshape(is_hidden_bullish_divergence ? is_pivotlow : na, offset = -right, title="히든 상승 다이버전스", text = "H Bull", style = shape.labelup, color = color.green, textcolor = color.white, location = location.bottom)
+//plot(is_pivotlow ? pivotlow : na, color = is_hidden_bullish_divergence ? color.green : na, offset = -right, linewidth = 2)
 
-
-// regular 하락다이버전스 ==> 지표 피봇고점은 하락, 가격 고점은 상승
-prev_pivothigh = ta.valuewhen(pivothigh , pivothigh, 1)
-osc_lower_high = pivothigh ? pivothigh < prev_pivothigh : false
+// 하락다이버전스
+prev_pivothigh = ta.valuewhen(is_pivothigh, pivothigh, 1)
+osc_lower_high = is_pivothigh ? pivothigh < prev_pivothigh : false
 isOverBuy = pivothigh > overBuy // pivothigh는 0 ~ 100 사이에 있는 rsi값임. ,, overBuy 는 80같은 값
-bgcolor( osc_lower_high ? color.rgb(76, 175, 79, 90) : na, offset = -5 )
-
-prev_high = ta.valuewhen( pivothigh, high[5], 1 )
-price_higher_high = pivothigh ? high[5] > prev_high : false
-
+prev_high = ta.valuewhen(is_pivothigh, high[right], 1)
+price_higher_high = is_pivothigh ? high[right] > prev_high : false
 is_regular_bearish_divergence = osc_lower_high and price_higher_high and isOverBuy
-//bgcolor( is_regular_bearish_divergence ? color.red : na , offset = -5 )
+//plotshape(is_regular_bearish_divergence ? is_pivothigh : na, offset = -right, title="하락 다이버전스", text = "Bear", style = shape.labeldown, color = color.red, textcolor = color.white, location = location.top)
+//plot(is_pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.red : na, offset = -right, linewidth = 2)
 
-plotshape( is_regular_bearish_divergence ? pivothigh : na , offset = -5 , title="하락 다이버전스", text = 'Bear', style= shape.labelup, color = color.red,textcolor = color.white, location = location.absolute ) 
-plot( pivothigh ? pivothigh : na, color = is_regular_bearish_divergence ? color.red : na , offset = -5 , linewidth= 2)
-
-
-//4. 전략 진입 | 종료
-
-//진입시점의 저가를 알기 위해                       // 현재 bar_index로부터 가장 최근의 entry_bar_index 뺀 결과
-barsSinceRecentEntry = strategy.opentrades > 0 ?  bar_index - strategy.opentrades.entry_bar_index(strategy.opentrades-1) : na
+// 히든 하락 다이버전스
+osc_higher_high = is_pivothigh ? pivothigh > prev_pivothigh : false
+isOverBuy := pivothigh > overBuy // pivothigh는 0 ~ 100 사이에 있는 rsi값임. ,, overBuy 는 80같은 값
+price_lower_high = is_pivothigh ? high[right] < prev_high : false
+is_hidden_bearish_divergence = osc_higher_high and price_lower_high and isOverBuy
+//plotshape(is_hidden_bearish_divergence ? is_pivothigh : na, offset = -right, title="히든 하락 다이버전스", text = "H Bear", style = shape.labeldown, color = color.red, textcolor = color.white, location = location.top)
+//plot(is_pivothigh ? pivothigh : na, color = is_hidden_bearish_divergence ? color.red : na, offset = -right, linewidth = 2)
 
 
 long_stop_price = 0.0 // 롱스탑 프라이스 초기화 .
-short_stop_price = 99999.9 // 숏스탑 프라이스 초기화 .
-///////////
+long_trail_percent = input.float(4.0, "롱 트레일")/100
 
-//////////         LONG 
-//////////
-
-// 롱 트레일링 스탑
-long_trail_percent = input.float(2.0, "롱 트레일")/100
-
-
-is_long = is_regular_bullish_divergence   
-
-if in_trade                                        // 현재 포지션에 진입되어 있는지 확인
-    if( is_long and strategy.position_size == 0 ) // strategy.position_size > 0 롱포지션 진입 중 , strategy.position_size < 0 숏포지션 진입 중
-        strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
-        strategy.exit("스탑","롱", stop= close * ( 1- long_trail_percent ), alert_message = POA.exit_message(password) )
-
-is_long_close = false
-if( is_regular_bearish_divergence ) // 하락다이버전스가 뜨면, 롱은 종료 , 숏 진입(숏스탑조건세팅).
-    is_long_close := true
-    strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
-    strategy.exit("스탑", "숏", stop= short_stop_price,  alert_message = POA.exit_message(password))
-
-//  롱 포지션 정리.    
-if in_trade
-    if( is_long_close )
-        strategy.close( "롱", comment = "롱 종료", alert_message = POA.close_message(password))
+if is_regular_bullish_divergence or is_hidden_bullish_divergence
+    strategy.entry("롱",strategy.long, alert_message = POA.entry_message(password))
+    strategy.exit("스탑","롱", stop= close * ( 1- long_trail_percent ), alert_message = POA.exit_message(password) )
 
 // 트레일링 스탑
 if strategy.position_size > 0
@@ -117,53 +101,4 @@ if strategy.position_size > 0  // 계속 stop주문은 변경이 된다.
     strategy.exit("스탑", "롱", stop= long_stop_price, alert_message = POA.exit_message(password) )
                                                                 // 스타일 라인브레이크 : 안그리겠다.
 plot( strategy.position_size > 0 ? long_stop_price : na , style= plot.style_linebr, color=color.green, linewidth=2) // 롱스탑값이 없으면 안그리고 있을 때 그림.
-// End of 트레일링 스탑
 
-///////////
-
-//////////         SHORT 
-//////////
-
-// 숏 트레일링 스탑
-short_trail_percent = input.float(2.0, "숏 트레일")/100
-//short_stop_price = 99999.9 // 숏스탑 프라이스 초기화 .
-
-
-is_short = is_regular_bearish_divergence   
-
-if in_trade                                        // 현재 포지션에 진입되어 있는지 확인
-    if( is_short and strategy.position_size == 0) // strategy.position_size > 0 롱포지션 진입 중 , strategy.position_size < 0 숏포지션 진입 중
-        strategy.entry( "숏", strategy.short, alert_message = POA.entry_message(password))
-        strategy.exit("스탑", "숏", stop= close * ( 1 + short_trail_percent) , alert_message = POA.exit_message(password))
-
-is_short_close = false
-if( is_regular_bullish_divergence ) // 상승다이버전스가 뜨면 숏종료, 롱 진입.(롱스탑조건세팅). 
-    is_short_close :=  true
-    strategy.entry( "롱", strategy.long, alert_message = POA.entry_message(password))
-    strategy.exit("스탑","롱", stop= close * ( 1- long_trail_percent ), alert_message = POA.exit_message(password) )
-
-
-//  숏 포지션 정리.
-if in_trade
-    if( is_short_close )
-        strategy.close( "숏", comment = "숏 종료",  alert_message = POA.close_message(password))
-
-
-// 트레일링 스탑
-if strategy.position_size < 0
-    stop_value = close * ( 1 + short_trail_percent )
-    short_stop_price := math.min( stop_value, short_stop_price[1] ) // 내가 이전에 계산해 놨던 short stop proce를 가져와서 비교하여 min저장.
-else 
-    short_stop_price := 99999.9 // 숏 스탑 을 무력화.
-
-if strategy.position_size < 0  // 숏 포지션이 존재할 때만 stop주문을 넣는다.   // 계속 stop주문은 변경이 된다. 
-    strategy.exit("스탑", "숏", stop= short_stop_price,  alert_message = POA.exit_message(password))
-
-plot( strategy.position_size < 0 ? short_stop_price : na , style= plot.style_linebr, color=color.red, linewidth=2) // 숏스탑값이 없으면 안그리고 있을 때 그림.
-// End of 트레일링 스탑
-
-
-// close : 시장가 종료
-// exit : 지정가 종료
-
-// stratege.exit( "종료", "롱", stop=stratege.position_avg_price * 0.9 , limit= stratege.position_avg_price *1.1 )
