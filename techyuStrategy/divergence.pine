@@ -4,7 +4,7 @@ import dokang/POA/12 as POA
 password = "1q2w3e4r%t"
 
 // 시작시간, 종료시간 설정
-start_time = input.time(timestamp("2023-11-06T17:16:00+09:00"), title="자동매매 시작")
+start_time = input.time(timestamp("2023-11-29T07:07:00+09:00"), title="자동매매 시작")
 end_time = input.time(timestamp("2024-09-19T21:31:00+09:00"), title="자동매매 종료")
 
 in_trade = POA.in_trade(start_time, end_time)
@@ -24,7 +24,7 @@ bgcolor(in_trade ? color.rgb(83, 107, 173, 94) : na)
 //15m: 4.98 30m: 16.08 1h: -13.62 2h: 17.33 3h: 17.82 4h: 9.86
 //
 //
-strategy("다이버전스 전략", overlay=true, process_orders_on_close = true, initial_capital = 100, default_qty_type = strategy.fixed, default_qty_value = 0.001)
+strategy("다이버전스 전략", overlay=true, process_orders_on_close = true, initial_capital = 100, default_qty_type = strategy.fixed, default_qty_value = 0.01)
 
 left = input.int(5, "left")
 right = input.int(5, "right")
